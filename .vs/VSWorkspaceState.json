@@ -1,0 +1,11 @@
+{
+  "ExpandedNodes": [
+    "",
+    "\\backend",
+    "\\backend\\src",
+    "\\backend\\src\\controllers",
+    "\\backend\\src\\lib"
+  ],
+  "SelectedNode": "\\backend\\src\\lib\\db.js",
+  "PreviewInSolutionExplorer": false
+}
