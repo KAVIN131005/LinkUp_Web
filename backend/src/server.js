@@ -15,12 +15,18 @@ const PORT = process.env.PORT;
 
 const __dirname = path.resolve();
 
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://your-render-app.onrender.com", // ← Replace this after deploying
+];
+
 app.use(
   cors({
-    origin: "http://localhost:5173",
-    credentials: true, // allow frontend to send cookies
+    origin: allowedOrigins,
+    credentials: true,
   })
 );
+
 
 app.use(express.json());
 app.use(cookieParser());
