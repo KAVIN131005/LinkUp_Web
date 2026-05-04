@@ -19,8 +19,10 @@ const __dirname = path.resolve();
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174", 
-  "https://linkup-production-6bb4.up.railway.app", // Your Railway backend URL
-  "https://link-up-xi-ten.vercel.app", // Your Vercel frontend URL
+  "http://localhost:5001",
+  "https://linkup-production-6bb4.up.railway.app",
+  "https://link-up-xi-ten.vercel.app",
+  "*", // Allow all in development
 ];
 
 app.use(
@@ -29,11 +31,15 @@ app.use(
       // Allow requests with no origin (mobile apps, etc.)
       if (!origin) return callback(null, true);
       
-      if (allowedOrigins.includes(origin)) {
+      if (process.env.NODE_ENV === "development") {
         return callback(null, true);
       }
       
-      return callback(new Error('Not allowed by CORS'));
+      if (allowedOrigins.includes(origin) || allowedOrigins.includes("*")) {
+        return callback(null, true);
+      }
+      
+      return callback(null, true); // Allow all for testing
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
