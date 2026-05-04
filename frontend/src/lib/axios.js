@@ -22,7 +22,9 @@ console.log("Final BASE_URL:", BASE_URL);
 export const axiosInstance = axios.create({
   baseURL: BASE_URL,
   withCredentials: true, // ✅ Send cookies with cross-origin requests
-  timeout: 10000,
+  timeout: 30000, // Increased from 10s to 30s
+  maxRetries: 3,
+  retryDelay: 1000,
 });
 
 // Add request interceptor for debugging

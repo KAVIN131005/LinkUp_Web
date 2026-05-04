@@ -47,26 +47,41 @@ const ChatPage = () => {
     enabled: !!authUser,
   });
 
-  // Update user status to online
+  // Update user status to online (only once on mount)
   useEffect(() => {
-    if (authUser) {
-      updateUserStatus("online").catch(console.error);
+    if (authUser && authUser._id) {
+      updateUserStatus("online").catch((error) => {
+        console.error("Error updating status:", error);
+        // Continue anyway even if status update fails
+      });
 
       // Set back to offline on component unmount
       return () => {
         updateUserStatus("offline").catch(console.error);
       };
     }
-  }, [authUser]);
+  }, [authUser?._id]);
 
-  // Fetch recipient's status
+  // Fetch recipient's status (only once)
   useEffect(() => {
     if (targetUserId && authUser) {
-      getUserStatus(targetUserId)
-        .then((data) => {
-          setRecipientData(data);
-        })
-        .catch(console.error);
+      const timer = setTimeout(() => {
+        getUserStatus(targetUserId)
+          .then((data) => {
+            setRecipientData(data);
+          })
+          .catch((error) => {
+            console.error("Error fetching status:", error);
+            // Fallback: just set basic recipient data
+            setRecipientData({
+              fullName: "User",
+              profilePic: "",
+              onlineStatus: "offline"
+            });
+          });
+      }, 500);
+
+      return () => clearTimeout(timer);
     }
   }, [targetUserId, authUser]);
 
