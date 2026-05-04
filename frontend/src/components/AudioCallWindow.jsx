@@ -6,6 +6,8 @@ import toast from "react-hot-toast";
 export default function AudioCallWindow({
   isOpen,
   callData,
+  socket,
+  authUser,
   onClose,
 }) {
   const [isMuted, setIsMuted] = useState(false);
@@ -19,43 +21,37 @@ export default function AudioCallWindow({
   const localAudioRef = useRef(null);
   const remoteAudioRef = useRef(null);
 
-  // WebRTC configuration
-  const rtcConfiguration = {
+  const rtcConfig = {
     iceServers: [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
-    ]
+      { urls: "stun:stun.l.google.com:19302" },
+      { urls: "stun:stun1.l.google.com:19302" },
+      { urls: "stun:stun2.l.google.com:19302" },
+      { urls: "stun:stun3.l.google.com:19302" },
+      { urls: "stun:stun4.l.google.com:19302" },
+    ],
   };
 
   useEffect(() => {
-    if (!isOpen || !callData) {
-      console.log("AudioCallWindow not open or no callData");
-      return;
-    }
+    if (!isOpen || !callData || !socket) return;
 
-    console.log("📱 Starting audio call setup...");
+    console.log("📱 Starting audio call...");
 
-    // Start duration timer
     durationIntervalRef.current = setInterval(() => {
       setDuration((prev) => prev + 1);
     }, 1000);
 
-    // Initialize WebRTC
     initializeCall();
 
     return () => {
-      if (durationIntervalRef.current) {
-        clearInterval(durationIntervalRef.current);
-      }
+      if (durationIntervalRef.current) clearInterval(durationIntervalRef.current);
       cleanup();
     };
-  }, [isOpen, callData]);
+  }, [isOpen, callData, socket]);
 
   const initializeCall = async () => {
     try {
       console.log("🎤 Requesting microphone access...");
 
-      // Get local media
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
@@ -67,21 +63,22 @@ export default function AudioCallWindow({
       console.log("✅ Microphone access granted");
       setLocalStream(stream);
 
-      // Set up local audio
       if (localAudioRef.current) {
         localAudioRef.current.srcObject = stream;
+        localAudioRef.current.muted = true;
       }
 
       // Create peer connection
-      peerConnectionRef.current = new RTCPeerConnection(rtcConfiguration);
+      const pc = new RTCPeerConnection(rtcConfig);
+      peerConnectionRef.current = pc;
 
       // Add local stream to peer connection
-      stream.getTracks().forEach(track => {
-        peerConnectionRef.current.addTrack(track, stream);
+      stream.getTracks().forEach((track) => {
+        pc.addTrack(track, stream);
       });
 
       // Handle remote stream
-      peerConnectionRef.current.ontrack = (event) => {
+      pc.ontrack = (event) => {
         console.log("📡 Received remote stream");
         setRemoteStream(event.streams[0]);
         if (remoteAudioRef.current) {
@@ -91,193 +88,195 @@ export default function AudioCallWindow({
       };
 
       // Handle ICE candidates
-      peerConnectionRef.current.onicecandidate = (event) => {
+      pc.onicecandidate = (event) => {
         if (event.candidate) {
-          console.log("ICE candidate:", event.candidate);
-          // In a real app, send this to the other peer via signaling server
+          console.log("🧊 Sending ICE candidate");
+          socket.emit("webrtc_ice_candidate", {
+            to: callData.calleeId || callData.recipient?.id,
+            from: authUser._id,
+            candidate: event.candidate,
+          });
         }
       };
 
-      // For demo purposes, create offer and immediately accept it
-      // In real app, this would be exchanged via WebSocket/Socket.io
-      const offer = await peerConnectionRef.current.createOffer();
-      await peerConnectionRef.current.setLocalDescription(offer);
-
-      // Simulate receiving answer (in real app, this comes from other peer)
-      setTimeout(async () => {
-        try {
-          await peerConnectionRef.current.setRemoteDescription(offer);
-          setIsConnected(true);
-          console.log("✅ Call connected (demo mode)");
-        } catch (error) {
-          console.error("Error setting remote description:", error);
+      // Handle connection state
+      pc.onconnectionstatechange = () => {
+        console.log("Connection state:", pc.connectionState);
+        if (pc.connectionState === "failed" || pc.connectionState === "disconnected") {
+          toast.error("Connection failed");
         }
-      }, 1000);
+      };
 
-    } catch (err) {
-      console.error("❌ Error accessing microphone:", err);
-      setError(err.message || "Could not access microphone");
-      toast.error(`❌ Microphone error: ${err.message}`);
-    }
-  };
-
-  const cleanup = () => {
-    if (localStream) {
-      localStream.getTracks().forEach((track) => {
-        console.log("🛑 Stopping local track");
-        track.stop();
+      // Listen for remote signals
+      socket.on("webrtc_offer", async (data) => {
+        console.log("📡 Received offer");
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(data.offer));
+          const answer = await pc.createAnswer();
+          await pc.setLocalDescription(answer);
+          socket.emit("webrtc_answer", {
+            to: data.from,
+            from: authUser._id,
+            answer: answer,
+          });
+        } catch (err) {
+          console.error("Error handling offer:", err);
+        }
       });
-    }
-    if (remoteStream) {
-      remoteStream.getTracks().forEach((track) => {
-        console.log("🛑 Stopping remote track");
-        track.stop();
+
+      socket.on("webrtc_answer", async (data) => {
+        console.log("📡 Received answer");
+        try {
+          await pc.setRemoteDescription(new RTCSessionDescription(data.answer));
+        } catch (err) {
+          console.error("Error handling answer:", err);
+        }
       });
-    }
-    if (peerConnectionRef.current) {
-      peerConnectionRef.current.close();
-    }
-  };
 
-  const handleEndCall = async () => {
-    try {
-      console.log("📞 Ending audio call...");
+      socket.on("webrtc_ice_candidate", async (data) => {
+        console.log("🧊 Adding ICE candidate");
+        try {
+          if (data.candidate) {
+            await pc.addIceCandidate(new RTCIceCandidate(data.candidate));
+          }
+        } catch (err) {
+          console.error("Error adding ICE candidate:", err);
+        }
+      });
 
-      cleanup();
-      await endCall(
-        callData.recipient.id,
-        "audio",
-        duration,
-        "completed"
-      );
+      // Create and send offer
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
 
-      toast.success("✅ Call ended");
-      setTimeout(onClose, 500);
+      socket.emit("webrtc_offer", {
+        to: callData.calleeId || callData.recipient?.id,
+        from: authUser._id,
+        offer: offer,
+      });
+
+      toast.success("📱 Audio call started");
     } catch (error) {
-      console.error("❌ Error ending call:", error);
-      onClose();
+      console.error("❌ Error initializing call:", error);
+      setError(error.message);
+      toast.error(`❌ Microphone error: ${error.message}`);
     }
   };
 
-  const toggleAudio = () => {
+  const toggleMute = () => {
     if (localStream) {
       localStream.getAudioTracks().forEach((track) => {
-        track.enabled = isMuted; // If muted, enable (unmute)
-        console.log(`🎤 Audio ${track.enabled ? 'unmuted' : 'muted'}`);
+        track.enabled = !track.enabled;
       });
       setIsMuted(!isMuted);
     }
   };
 
-  const formatDuration = () => {
-    const hrs = Math.floor(duration / 3600);
-    const mins = Math.floor((duration % 3600) / 60);
-    const secs = duration % 60;
-    if (hrs > 0) {
-      return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+  const handleEndCall = async () => {
+    try {
+      await endCall(
+        callData.calleeId || callData.recipient?.id,
+        callData.callType,
+        duration,
+        "completed"
+      );
+    } catch (error) {
+      console.error("Error ending call:", error);
     }
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
+    cleanup();
+    onClose();
+  };
+
+  const cleanup = () => {
+    if (localStream) {
+      localStream.getTracks().forEach((track) => track.stop());
+    }
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+    }
+    socket?.off("webrtc_offer");
+    socket?.off("webrtc_answer");
+    socket?.off("webrtc_ice_candidate");
   };
 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-gradient-to-br from-blue-600 via-blue-700 to-blue-900 z-50 flex flex-col items-center justify-center p-4">
-      {/* Call Card */}
-      <div className="bg-white bg-opacity-10 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 lg:p-12 text-center max-w-md w-full mx-auto shadow-2xl">
-        {/* Close Button */}
+    <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+      <div className="bg-white rounded-2xl p-8 max-w-sm w-full mx-4 shadow-2xl">
+        {/* Close button */}
         <button
-          onClick={handleEndCall}
-          className="absolute top-4 right-4 p-2 hover:bg-white/20 rounded-full transition lg:hidden"
+          onClick={onClose}
+          className="absolute top-4 right-4 p-2 hover:bg-gray-200 rounded-full transition"
         >
-          <X className="w-5 h-5 text-white" />
+          <X className="w-6 h-6 text-gray-600" />
         </button>
 
-        {/* Avatar */}
-        <div className="mb-6 lg:mb-8">
-          <div className="relative inline-block">
-            <img
-              src={callData?.recipient?.profilePic || "https://via.placeholder.com/120"}
-              alt={callData?.recipient?.name}
-              className="w-24 lg:w-32 h-24 lg:h-32 rounded-full mx-auto border-4 border-white object-cover shadow-lg animate-pulse"
-              onError={(e) => {
-                e.target.src = "https://via.placeholder.com/120";
-              }}
-            />
-            {isConnected && (
-              <div className="absolute bottom-2 right-2 w-5 h-5 bg-green-400 rounded-full border-2 border-white animate-pulse" />
+        {/* Contact Info */}
+        <div className="text-center mb-8">
+          <div className="w-24 h-24 mx-auto mb-4 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center">
+            {callData.recipient?.profilePic ? (
+              <img
+                src={callData.recipient.profilePic}
+                alt={callData.recipient.name}
+                className="w-full h-full rounded-full object-cover"
+              />
+            ) : (
+              <span className="text-4xl font-bold text-white">
+                {callData.recipient?.name?.charAt(0)?.toUpperCase() || "U"}
+              </span>
             )}
           </div>
+          <h2 className="text-2xl font-bold text-gray-800">
+            {callData.recipient?.name || "User"}
+          </h2>
+          <p className="text-gray-600 mt-2">
+            {isConnected ? "🟢 Connected" : "📞 Ringing..."}
+          </p>
         </div>
 
-        {/* Name */}
-        <h2 className="text-2xl lg:text-3xl font-bold text-white mb-2 drop-shadow-lg">
-          {callData?.recipient?.name || "Unknown"}
-        </h2>
-
         {/* Duration */}
-        <p className="text-5xl lg:text-6xl font-mono text-blue-100 mb-4 font-bold drop-shadow-lg">
-          {formatDuration()}
-        </p>
+        <div className="text-center mb-8">
+          <p className="text-4xl font-mono font-bold text-gray-800">
+            {Math.floor(duration / 60)}:{String(duration % 60).padStart(2, "0")}
+          </p>
+        </div>
 
-        {/* Status */}
-        <p className="text-blue-200 mb-8 text-base lg:text-lg drop-shadow-lg">
-          {isConnected ? "📞 Audio Call Connected" : "📞 Connecting..."}
-        </p>
-
-        {/* Error Message */}
-        {error && (
-          <div className="mb-6 bg-red-600/80 text-white px-4 py-2 rounded-lg text-sm">
-            {error}
-          </div>
-        )}
-
-        {/* Control Buttons */}
-        <div className="flex gap-4 justify-center mb-6">
-          {/* Mute Audio */}
+        {/* Controls */}
+        <div className="flex justify-center gap-4 mb-6">
           <button
-            onClick={toggleAudio}
-            className={`w-16 h-16 lg:w-20 lg:h-20 rounded-full transition transform hover:scale-110 flex items-center justify-center font-bold ${
+            onClick={toggleMute}
+            className={`p-4 rounded-full transition ${
               isMuted
-                ? "bg-red-600 hover:bg-red-700 ring-2 ring-red-300"
-                : "bg-gray-700 hover:bg-gray-600 ring-2 ring-gray-400"
-            }`}
+                ? "bg-red-500 hover:bg-red-600"
+                : "bg-gray-300 hover:bg-gray-400"
+            } text-white`}
             title={isMuted ? "Unmute" : "Mute"}
           >
             {isMuted ? (
-              <MicOff className="w-8 h-8 lg:w-10 lg:h-10 text-white" />
+              <MicOff className="w-6 h-6" />
             ) : (
-              <Mic className="w-8 h-8 lg:w-10 lg:h-10 text-white" />
+              <Mic className="w-6 h-6" />
             )}
           </button>
 
-          {/* End Call */}
           <button
             onClick={handleEndCall}
-            className="w-16 h-16 lg:w-20 lg:h-20 rounded-full bg-red-600 hover:bg-red-700 transition transform hover:scale-110 flex items-center justify-center ring-2 ring-red-300"
+            className="p-4 rounded-full bg-red-600 hover:bg-red-700 text-white transition"
             title="End Call"
           >
-            <PhoneOff className="w-8 h-8 lg:w-10 lg:h-10 text-white" />
+            <PhoneOff className="w-6 h-6" />
           </button>
         </div>
 
-        {/* Muted Status */}
-        {isMuted && (
-          <p className="text-orange-300 text-sm lg:text-base drop-shadow-lg font-semibold">
-            🔇 You are muted
-          </p>
-        )}
-
-        {/* Connection Status */}
-        {isConnected && (
-          <p className="text-green-300 text-xs lg:text-sm mt-4 drop-shadow-lg">
-            ✅ Connected
-          </p>
-        )}
-
         {/* Hidden audio elements */}
-        <audio ref={localAudioRef} muted autoPlay />
+        <audio ref={localAudioRef} autoPlay muted />
         <audio ref={remoteAudioRef} autoPlay />
+
+        {error && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded text-center text-sm">
+            {error}
+          </div>
+        )}
       </div>
     </div>
   );

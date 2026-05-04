@@ -62,25 +62,22 @@
 
 /* 🌌 Channel Background - Neon Gradient */
 .str-chat__channel {
-  @apply flex items-center justify-center min-h-screen;
-  background: linear-gradient(135deg, #0f172a, #3b82f6, #a855f7);
-  background-size: 600% 600%;
-  animation: gradientShift 10s ease infinite;
+  @apply w-full h-full flex flex-col bg-white;
 }
 
 /* ✨ Main Chat Container */
 .str-chat__container {
-  @apply w-full max-w-5xl h-[85vh] rounded-3xl overflow-hidden;
-  background-color: rgba(15, 23, 42, 0.8); /* semi-transparent dark */
-  backdrop-filter: blur(20px);
-  box-shadow: 0 0 40px rgba(168, 85, 247, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  @apply w-full h-full flex flex-col;
+}
+
+/* 📦 Stream Chat Window */
+.str-chat__window {
+  @apply w-full h-full flex flex-col;
 }
 
 /* 💬 Message List */
 .str-chat__list {
-  @apply p-4 overflow-y-auto;
-  background-color: transparent;
+  @apply flex-1 overflow-y-auto p-4 bg-gray-50;
   scrollbar-width: thin;
   scrollbar-color: #a855f7 transparent;
 }
@@ -91,26 +88,34 @@
 }
 
 /* 📝 Message Input Area */
-.str-chat__message-input {
-  @apply px-4 py-2 border-t border-purple-500 bg-[#1e293b] text-white;
+.str-chat__message-input-flat {
+  @apply flex-shrink-0 bg-white border-t border-gray-300 p-4;
 }
 
 /* 🧊 Messages - Custom Bubbles */
+.str-chat__message-bubble {
+  @apply rounded-2xl shadow-md;
+}
+
 .str-chat__message--me .str-chat__message-simple {
-  @apply bg-purple-500 text-white rounded-2xl p-3 max-w-xs shadow-lg;
+  @apply bg-blue-500 text-white rounded-2xl p-3 max-w-xs shadow-lg;
 }
 
 .str-chat__message--other .str-chat__message-simple {
-  @apply bg-blue-500 text-white rounded-2xl p-3 max-w-xs shadow-lg;
+  @apply bg-gray-300 text-gray-900 rounded-2xl p-3 max-w-xs shadow-lg;
 }
 
 /* 🧑‍💬 Avatars and Names */
 .str-chat__avatar {
-  @apply w-8 h-8 rounded-full border border-purple-400;
+  @apply w-8 h-8 rounded-full border-2 border-gray-300;
+}
+
+.str-chat__avatar img {
+  @apply w-full h-full rounded-full object-cover;
 }
 
 .str-chat__username {
-  @apply text-sm font-semibold text-purple-300;
+  @apply text-sm font-semibold text-gray-700;
 }
 
 /* Focus Effect */

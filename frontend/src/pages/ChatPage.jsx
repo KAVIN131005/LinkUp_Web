@@ -13,6 +13,7 @@ import {
   MessageList,
   Thread,
   Window,
+  useChannelStateContext,
 } from "stream-chat-react";
 import { StreamChat } from "stream-chat";
 import toast from "react-hot-toast";
@@ -24,7 +25,7 @@ import PinnedMessagesBar from "../components/PinnedMessagesBar";
 import FavoritesList from "../components/FavoritesList";
 import UserStatusIndicator from "../components/UserStatusIndicator";
 import CustomMessage from "../components/CustomMessage";
-import { Star, Search, Send } from "lucide-react";
+import { Star, Search } from "lucide-react";
 
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
@@ -213,50 +214,14 @@ const ChatPage = () => {
       />
 
       {/* MAIN CHAT AREA */}
-      <div className="flex-1 overflow-hidden flex flex-col">
+      <div className="flex-1 overflow-hidden">
         <Chat client={chatClient}>
           <Channel channel={channel}>
-            <div className="w-full h-full flex flex-col bg-gray-50">
-              {/* Messages Area */}
-              <div className="flex-1 overflow-auto">
-                <MessageList Message={CustomMessage} />
-              </div>
-
-              {/* Message Input Bar */}
-              <div className="bg-white border-t border-gray-200 p-3 sm:p-4 shadow-lg">
-                <div className="flex gap-2 sm:gap-3">
-                  <input
-                    type="text"
-                    id="msg-input-custom"
-                    placeholder="Type a message..."
-                    className="flex-1 px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter" && e.target.value.trim()) {
-                        channel.sendMessage({
-                          text: e.target.value.trim(),
-                        });
-                        e.target.value = "";
-                      }
-                    }}
-                  />
-                  <button
-                    onClick={() => {
-                      const input = document.getElementById("msg-input-custom");
-                      if (input && input.value.trim()) {
-                        channel.sendMessage({
-                          text: input.value.trim(),
-                        });
-                        input.value = "";
-                      }
-                    }}
-                    className="px-3 sm:px-4 py-2 sm:py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center gap-2 font-semibold transition flex-shrink-0"
-                  >
-                    <Send className="w-4 h-4 sm:w-5 sm:h-5" />
-                    <span className="hidden sm:inline text-sm">Send</span>
-                  </button>
-                </div>
-              </div>
-            </div>
+            <Window>
+              <ChannelHeader />
+              <MessageList Message={CustomMessage} />
+              <MessageInput />
+            </Window>
             <Thread />
           </Channel>
         </Chat>
