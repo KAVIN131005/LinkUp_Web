@@ -9,6 +9,7 @@ import {
   Channel,
   ChannelHeader,
   Chat,
+  MessageInput,
   MessageList,
   Thread,
   Window,
@@ -182,14 +183,7 @@ const ChatPage = () => {
               <Window>
                 <ChannelHeader />
                 <MessageList />
-                {/* <MessageInput focus /> */}
-                <div className="p-4 bg-gray-50 border-t">
-                  <input
-                    type="text"
-                    placeholder="Type a message..."
-                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  />
-                </div>
+                <MessageInput focus />
               </Window>
             </div>
             <Thread />
