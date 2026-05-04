@@ -129,9 +129,9 @@ const ChatPage = () => {
   if (loading || !chatClient || !channel) return <ChatLoader />;
 
   return (
-    <div className="h-screen flex flex-col bg-white overflow-hidden">
+    <div className="h-screen flex flex-col bg-slate-900 overflow-hidden">
       {/* TOP HEADER - User Info & Call Button */}
-      <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 sm:px-6 py-3 sm:py-4 border-b border-blue-700 shadow-md">
+      <div className="bg-gradient-to-r from-slate-800 to-slate-700 text-white px-4 sm:px-6 py-3 sm:py-4 border-b border-slate-600 shadow-lg">
         <div className="flex items-center justify-between">
           {/* Left: Avatar & User Info */}
           <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
@@ -139,13 +139,13 @@ const ChatPage = () => {
               <img
                 src={recipientData.profilePic}
                 alt={recipientData.fullName}
-                className="w-10 sm:w-12 h-10 sm:h-12 rounded-full object-cover border-2 border-white shadow-lg flex-shrink-0"
+                className="w-10 sm:w-12 h-10 sm:h-12 rounded-full object-cover border-2 border-emerald-500 shadow-lg flex-shrink-0"
                 onError={(e) => {
                   e.target.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(recipientData.fullName || "User");
                 }}
               />
             ) : (
-              <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 border-2 border-white">
+              <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-full bg-emerald-500/20 flex items-center justify-center flex-shrink-0 border-2 border-emerald-500">
                 <span className="text-lg sm:text-xl font-bold">
                   {recipientData?.fullName?.charAt(0)?.toUpperCase() || "U"}
                 </span>
@@ -155,7 +155,7 @@ const ChatPage = () => {
               <h2 className="text-base sm:text-lg font-bold truncate">
                 {recipientData?.fullName || "Loading..."}
               </h2>
-              <p className={`text-xs sm:text-sm ${recipientData?.onlineStatus === "online" ? "text-green-200" : "text-gray-200"}`}>
+              <p className={`text-xs sm:text-sm ${recipientData?.onlineStatus === "online" ? "text-emerald-300" : "text-slate-400"}`}>
                 {recipientData?.onlineStatus === "online" ? "🟢 Online" : "🔴 Offline"}
               </p>
             </div>
@@ -165,26 +165,26 @@ const ChatPage = () => {
           <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
             <button
               onClick={() => setShowSearch(!showSearch)}
-              className="p-2 hover:bg-blue-700 rounded-lg transition"
+              className="p-2 hover:bg-slate-700 rounded-lg transition"
               title="Search"
             >
               <Search className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
             <button
               onClick={() => setShowPinned(!showPinned)}
-              className="p-2 hover:bg-blue-700 rounded-lg transition"
+              className="p-2 hover:bg-slate-700 rounded-lg transition"
               title="Pinned"
             >
               📌
             </button>
             <button
               onClick={() => setShowFavorites(!showFavorites)}
-              className="p-2 hover:bg-blue-700 rounded-lg transition"
+              className="p-2 hover:bg-slate-700 rounded-lg transition"
               title="Favorites"
             >
               <Star className="w-5 h-5 sm:w-6 sm:h-6" />
             </button>
-            <div className="h-6 w-px bg-blue-400 mx-1"></div>
+            <div className="h-6 w-px bg-slate-600 mx-1"></div>
             {/* Call Button via Portal */}
             <CallButton
               recipientId={targetUserId}
