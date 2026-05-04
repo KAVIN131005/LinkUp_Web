@@ -29,22 +29,24 @@ const CustomMessage = (props) => {
     });
 
     return (
-      <div className="flex items-center ml-1 opacity-70">
+      <div className="flex items-center ml-2 opacity-60">
         {isRead ? (
           // Blue double tick for read messages
-          <CheckCheck className="w-3 h-3 text-blue-500" />
+          <CheckCheck className="w-4 h-4 text-blue-400" />
         ) : (
           // Gray single tick for sent/delivered
-          <Check className="w-3 h-3 text-gray-400" />
+          <Check className="w-4 h-4 text-gray-300" />
         )}
       </div>
     );
   };
 
   return (
-    <div className="relative group">
-      <MessageSimple {...props} />
-      <div className="absolute bottom-1 right-2">
+    <div className="flex items-end gap-2 group py-1 hover:bg-gray-50/50 rounded-lg px-2 transition-all duration-150">
+      <div className="flex-1">
+        <MessageSimple {...props} />
+      </div>
+      <div className="hidden group-hover:flex items-center">
         <MessageStatus message={message} client={client} />
       </div>
     </div>
