@@ -1,5 +1,7 @@
 # LinkUp - WhatsApp Web Clone
 
+> 🚀 **[LIVE DEMO](https://link-up-web-xi.vercel.app)** | 📱 **Frontend**: [Vercel](https://link-up-web-xi.vercel.app) | 🔧 **Backend**: [Render](https://linkup-web-8vjm.onrender.com)
+
 A full-stack real-time messaging application built with **React**, **Node.js/Express**, and **MongoDB**. LinkUp provides instant messaging, friend connections, and video calling capabilities with a modern WhatsApp Web-like interface.
 
 ## 🌟 Project Overview
@@ -10,6 +12,18 @@ LinkUp is a complete implementation of a WhatsApp Web clone that demonstrates co
 - **Backend**: Express.js with MongoDB and JWT authentication
 - **Database**: MongoDB Atlas for cloud data storage
 - **Real-time**: Stream Chat API for instant messaging and video calls
+
+### ✅ Production Deployment Status
+
+| Component | Platform | Status | URL |
+|-----------|----------|--------|-----|
+| **Frontend** | Vercel | ✅ Live | https://link-up-web-xi.vercel.app |
+| **Backend** | Render | ✅ Live | https://linkup-web-8vjm.onrender.com |
+| **Database** | MongoDB Atlas | ✅ Connected | Cloud Hosted |
+| **Real-time** | Stream.io | ✅ Active | Integrated |
+
+**Deployment Date**: May 4, 2026  
+**All 9 Features**: ✅ Fully Implemented & Production Ready
 
 ---
 

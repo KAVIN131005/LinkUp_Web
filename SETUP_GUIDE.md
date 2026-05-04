@@ -1,8 +1,10 @@
 # LinkUp - Complete Setup & Deployment Guide
 
+> 🚀 **[LIVE DEMO](https://link-up-web-xi.vercel.app)** — Frontend on [Vercel](https://link-up-web-xi.vercel.app) | Backend on [Render](https://linkup-web-8vjm.onrender.com) | ✅ Production Ready
+
 ## 🎯 Quick Start Guide
 
-### 5-Minute Setup
+### For Local Development (5-Minute Setup)
 
 #### Step 1: Clone Repository
 ```bash

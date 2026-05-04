@@ -4,6 +4,16 @@
 
 ---
 
+## ✅ LIVE DEPLOYMENT STATUS (May 4, 2026)
+
+### Production URLs
+- 🌐 **Frontend (Vercel)**: https://link-up-web-xi.vercel.app
+- 🔧 **Backend (Render)**: https://linkup-web-8vjm.onrender.com
+
+**Status**: ✅ Both deployed and connected successfully
+
+---
+
 ## 🔗 STEP 1: CONNECT TO GITHUB
 
 ### First Time Setup (Run Once)
@@ -36,61 +46,61 @@ git push -u origin main
 
 ## 🚀 STEP 2: DEPLOY FRONTEND (VERCEL)
 
-### Option A: Automatic (Recommended)
+### ✅ DEPLOYED
+**Live URL**: https://link-up-web-xi.vercel.app
+
+### Configuration Used
 
 1. Go to https://vercel.com/dashboard
-2. Click "Add New..." → "Project"
-3. Select your GitHub repository `linkup`
-4. Vercel auto-configures from `vercel.json`
-5. Add Environment Variables:
-   - `VITE_API_URL` = `https://linkup-backend.onrender.com/api`
-   - `VITE_STREAM_API_KEY` = Your Stream API Key
-6. Click "Deploy"
+2. Select `linkup` GitHub repository
+3. Vercel auto-configures from `vercel.json`
+4. Environment Variables Set:
+   - `VITE_API_URL` = `https://linkup-web-8vjm.onrender.com/api`
+   - `VITE_STREAM_API_KEY` = `qzbgw32s7rmk`
+5. Root Directory: `frontend`
+6. Build Command: `cd frontend && npm install`
 
-**Live URL**: `https://linkup-xxxxx.vercel.app`
-
-### Option B: Manual Command
-
-```bash
+**Status**: ✅ Connected to Render backend\n\n### Manual Deployment (if needed)\n\n```bash
 # Install Vercel CLI
 npm install -g vercel
 
 # Deploy
 vercel --prod
 
-# Follow prompts and select your project
+# Follow prompts
 ```
 
 ---
 
 ## 🔧 STEP 3: DEPLOY BACKEND (RENDER)
 
-### Step-by-Step Instructions
+### ✅ DEPLOYED
+**Live URL**: https://linkup-web-8vjm.onrender.com
 
-1. Go to https://dashboard.render.com
-2. Click "New+" → "Web Service"
-3. Select "Deploy from repository"
-4. Authorize GitHub and select `linkup` repo
-5. Fill in:
-   - **Name**: `linkup-backend`
+### Configuration Used
+
+1. Dashboard: https://dashboard.render.com
+2. New Web Service from GitHub repository
+3. Settings:
+   - **Name**: `linkup-web`
    - **Root Directory**: `backend`
    - **Runtime**: `Node`
    - **Build Command**: `npm install`
-   - **Start Command**: `node src/server.js`
+   - **Start Command**: `npm start`
 
-6. Add Environment Variables:
+4. Environment Variables Set:
    ```
    NODE_ENV = production
    PORT = 5001
-   MONGO_URI = mongodb+srv://username:password@cluster...
-   STREAM_API_KEY = your_stream_api_key
-   STREAM_API_SECRET = your_stream_api_secret
-   JWT_SECRET_KEY = your_jwt_secret_key
+   MONGO_URI = mongodb+srv://*** (MongoDB Atlas)
+   STREAM_API_KEY = qzbgw32s7rmk
+   STREAM_API_SECRET = ***
+   JWT_SECRET_KEY = ***
    ```
 
-7. Click "Create Web Service"
+5. Node Version: v20.14.0 (specified in .nvmrc)
 
-**Live URL**: `https://linkup-backend.onrender.com`
+**Status**: ✅ MongoDB connected, all APIs working
 
 ---
 
