@@ -47,6 +47,51 @@ const userSchema = new mongoose.Schema(
         ref: "User",
       },
     ],
+    // 🟢 Online Status Feature
+    onlineStatus: {
+      type: String,
+      enum: ["online", "away", "busy", "offline"],
+      default: "offline",
+    },
+    lastSeenAt: {
+      type: Date,
+      default: Date.now,
+    },
+    // ✍️ Typing Status
+    isTyping: {
+      type: Boolean,
+      default: false,
+    },
+    typingIn: {
+      type: String,
+      default: null,
+    },
+    // ⭐ Favorites Feature
+    favorites: [
+      {
+        messageId: String,
+        channelId: String,
+        content: String,
+        sender: String,
+        timestamp: Date,
+      },
+    ],
+    // 🔔 Call History
+    callHistory: [
+      {
+        calleeId: mongoose.Schema.Types.ObjectId,
+        callType: {
+          type: String,
+          enum: ["audio", "video"],
+        },
+        duration: Number,
+        status: {
+          type: String,
+          enum: ["completed", "missed", "declined"],
+        },
+        timestamp: Date,
+      },
+    ],
   },
   { timestamps: true }
 );

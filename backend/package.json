@@ -1,17 +1,17 @@
 {
-  "name": "backend",
+  "name": "streamify-backend",
   "version": "1.0.0",
   "main": "src/server.js",
-"scripts": {
-  "start": "node index.js",
-  "build": "npm run build --prefix ../frontend"
-},
-
-  "keywords": [],
-  "author": "",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "build": "echo 'Backend build completed'"
+  },
+  "keywords": ["video", "chat", "nodejs", "express"],
+  "author": "KAVIN131005",
   "type": "module",
   "license": "ISC",
-  "description": "",
+  "description": "Streamify video calls backend API",
   "dependencies": {
     "bcryptjs": "^3.0.2",
     "cookie-parser": "^1.4.7",
@@ -24,5 +24,9 @@
   },
   "devDependencies": {
     "nodemon": "^3.1.9"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
   }
 }

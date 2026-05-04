@@ -1,26 +1,94 @@
-# Logs
-logs
-*.log
+# Environment variables
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Dependencies
+node_modules/
 npm-debug.log*
+npm-error.log*
 yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
 
-node_modules
-dist
-dist-ssr
+# Production build
+dist/
+dist-ssr/
+build/
+.next/
+out/
 *.local
 
-# Editor directories and files
+# IDE and Editor
 .vscode/*
 !.vscode/extensions.json
-.idea
-.DS_Store
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+.idea/
+*.swp
+*.swo
+*~
+*.iml
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
 
-.env
+# OS specific
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# Logs
+logs/
+*.log
+
+# Temp files
+tmp/
+temp/
+*.tmp
+*.temp
+
+# Runtime data
+pids/
+*.pid
+*.seed
+*.pid.lock
+
+# Test coverage
+coverage/
+.nyc_output/
+
+# Misc
+.cache/
+.parcel-cache
+.eslintcache
+.prettierignore
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn integrity file
+.yarn-integrity

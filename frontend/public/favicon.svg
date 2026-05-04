@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
+  <defs>
+    <linearGradient id="faviconGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82F6;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#8B5CF6;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#06B6D4;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background Circle -->
+  <circle cx="16" cy="16" r="15" fill="url(#faviconGradient)" />
+  
+  <!-- Simplified Link Chain -->
+  <g fill="white" stroke="white" stroke-width="1.5">
+    <!-- First Link -->
+    <circle cx="11" cy="13" r="3" fill="none"/>
+    <!-- Second Link -->
+    <circle cx="21" cy="19" r="3" fill="none"/>
+    <!-- Connection Line -->
+    <line x1="13" y1="15" x2="19" y2="17" stroke-width="2" stroke-linecap="round"/>
+  </g>
+  
+  <!-- Small video icon -->
+  <rect x="8" y="22" width="8" height="5" rx="1" fill="none" stroke="white" stroke-width="1"/>
+  <polygon points="16,23 19,22 19,27 16,26" fill="white"/>
+</svg>

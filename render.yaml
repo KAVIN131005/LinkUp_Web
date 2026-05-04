@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: linkup-backend
+    runtime: node
+    plan: free
+    buildCommand: "npm install"
+    startCommand: "node src/server.js"
+    envVars:
+      - key: NODE_ENV
+        value: "production"
+      - key: PORT
+        value: "5001"
+      - key: MONGO_URI
+        description: "MongoDB connection string"
+        scope: shared
+      - key: STREAM_API_KEY
+        description: "Stream.io API Key"
+        scope: shared
+      - key: STREAM_API_SECRET
+        description: "Stream.io API Secret"
+        scope: shared
+      - key: JWT_SECRET_KEY
+        description: "JWT Secret for authentication"
+        scope: shared

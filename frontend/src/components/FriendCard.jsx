@@ -3,29 +3,52 @@ import { LANGUAGE_TO_FLAG } from "../constants";
 
 const FriendCard = ({ friend }) => {
   return (
-    <div className="card bg-base-200 hover:shadow-md transition-shadow">
-      <div className="card-body p-4">
-        {/* USER INFO */}
-        <div className="flex items-center gap-3 mb-3">
-          <div className="avatar size-12">
-            <img src={friend.profilePic} alt={friend.fullName} />
+    <div className="group relative bg-base-100/80 backdrop-blur-sm rounded-3xl border border-primary/10 hover:border-primary/30 shadow-lg hover:shadow-2xl hover:shadow-primary/10 transition-all duration-500 hover:scale-[1.02] overflow-hidden">
+      {/* Background Gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+      
+      <div className="relative p-6 space-y-4">
+        {/* User Info */}
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <div className="avatar size-16 rounded-2xl overflow-hidden ring-4 ring-primary/20 group-hover:ring-primary/40 transition-all duration-300">
+              <img src={friend.profilePic} alt={friend.fullName} className="w-full h-full object-cover" />
+            </div>
+            {/* Online status indicator */}
+            <div className="absolute -bottom-1 -right-1 w-5 h-5 bg-success rounded-full border-2 border-base-100 flex items-center justify-center">
+              <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+            </div>
           </div>
-          <h3 className="font-semibold truncate">{friend.fullName}</h3>
+          
+          <div className="flex-1 min-w-0">
+            <h3 className="font-bold text-xl text-base-content truncate group-hover:text-primary transition-colors duration-300">
+              {friend.fullName}
+            </h3>
+            <p className="text-sm text-base-content/60">Language Partner</p>
+          </div>
         </div>
 
-        <div className="flex flex-wrap gap-1.5 mb-3">
-          <span className="badge badge-secondary text-xs">
+        {/* Languages */}
+        <div className="flex flex-wrap gap-2">
+          <div className="badge badge-primary badge-lg gap-2 px-3 py-2 text-white font-medium">
             {getLanguageFlag(friend.nativeLanguage)}
             Native: {friend.nativeLanguage}
-          </span>
-          <span className="badge badge-outline text-xs">
+          </div>
+          <div className="badge badge-outline badge-lg gap-2 px-3 py-2 border-2 font-medium hover:bg-primary/10 transition-colors duration-200">
             {getLanguageFlag(friend.learningLanguage)}
             Learning: {friend.learningLanguage}
-          </span>
+          </div>
         </div>
 
-        <Link to={`/chat/${friend._id}`} className="btn btn-outline w-full">
-          Message
+        {/* Message Button */}
+        <Link 
+          to={`/chat/${friend._id}`} 
+          className="btn btn-outline btn-lg w-full rounded-2xl border-2 hover:btn-primary hover:scale-[1.02] hover:shadow-lg hover:shadow-primary/25 transition-all duration-300 group/btn"
+        >
+          <div className="flex items-center gap-2">
+            💬
+            <span className="group-hover/btn:translate-x-1 transition-transform duration-200">Message</span>
+          </div>
         </Link>
       </div>
     </div>

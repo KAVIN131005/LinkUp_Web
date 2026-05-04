@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { useParams } from "react-router";
 import useAuthUser from "../hooks/useAuthUser";
+import useDocumentTitle from "../hooks/useDocumentTitle";
 import { useQuery } from "@tanstack/react-query";
-import { getStreamToken } from "../lib/api";
+import { getStreamToken, updateUserStatus, getUserStatus, addMessageReaction } from "../lib/api";
 
 import {
   Channel,
   ChannelHeader,
   Chat,
-  MessageInput,
   MessageList,
   Thread,
   Window,
@@ -18,23 +18,56 @@ import toast from "react-hot-toast";
 
 import ChatLoader from "../components/ChatLoader";
 import CallButton from "../components/CallButton";
+import MessageSearchBar from "../components/MessageSearchBar";
+import PinnedMessagesBar from "../components/PinnedMessagesBar";
+import FavoritesList from "../components/FavoritesList";
+import UserStatusIndicator from "../components/UserStatusIndicator";
+import { Star, Search } from "lucide-react";
 
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
 const ChatPage = () => {
   const { id: targetUserId } = useParams();
+  useDocumentTitle("Chat");
 
   const [chatClient, setChatClient] = useState(null);
   const [channel, setChannel] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showSearch, setShowSearch] = useState(false);
+  const [showPinned, setShowPinned] = useState(false);
+  const [showFavorites, setShowFavorites] = useState(false);
+  const [recipientData, setRecipientData] = useState(null);
 
   const { authUser } = useAuthUser();
 
   const { data: tokenData } = useQuery({
     queryKey: ["streamToken"],
     queryFn: getStreamToken,
-    enabled: !!authUser, // this will run only when authUser is available
+    enabled: !!authUser,
   });
+
+  // Update user status to online
+  useEffect(() => {
+    if (authUser) {
+      updateUserStatus("online").catch(console.error);
+
+      // Set back to offline on component unmount
+      return () => {
+        updateUserStatus("offline").catch(console.error);
+      };
+    }
+  }, [authUser]);
+
+  // Fetch recipient's status
+  useEffect(() => {
+    if (targetUserId && authUser) {
+      getUserStatus(targetUserId)
+        .then((data) => {
+          setRecipientData(data);
+        })
+        .catch(console.error);
+    }
+  }, [targetUserId, authUser]);
 
   useEffect(() => {
     const initChat = async () => {
@@ -54,12 +87,7 @@ const ChatPage = () => {
           tokenData.token
         );
 
-        //
         const channelId = [authUser._id, targetUserId].sort().join("-");
-
-        // you and me
-        // if i start the chat => channelId: [myId, yourId]
-        // if you start the chat => channelId: [yourId, myId]  => [myId,yourId]
 
         const currChannel = client.channel("messaging", channelId, {
           members: [authUser._id, targetUserId],
@@ -80,35 +108,97 @@ const ChatPage = () => {
     initChat();
   }, [tokenData, authUser, targetUserId]);
 
-  const handleVideoCall = () => {
-    if (channel) {
-      const callUrl = `${window.location.origin}/call/${channel.id}`;
-
-      channel.sendMessage({
-        text: `I've started a video call. Join me here: ${callUrl}`,
-      });
-
-      toast.success("Video call link sent successfully!");
-    }
-  };
-
   if (loading || !chatClient || !channel) return <ChatLoader />;
 
   return (
-    <div className="h-[93vh]">
-      <Chat client={chatClient}>
-        <Channel channel={channel}>
-          <div className="w-full relative">
-            <CallButton handleVideoCall={handleVideoCall} />
-            <Window>
-              <ChannelHeader />
-              <MessageList />
-              <MessageInput focus />
-            </Window>
-          </div>
-          <Thread />
-        </Channel>
-      </Chat>
+    <div className="h-[93vh] flex flex-col">
+      {/* Feature Controls Bar */}
+      <div className="bg-gray-50 border-b px-4 py-2 flex items-center gap-2">
+        <button
+          onClick={() => setShowSearch(!showSearch)}
+          className="p-2 hover:bg-gray-200 rounded-lg transition flex items-center gap-1 text-sm"
+          title="Search messages"
+        >
+          <Search className="w-4 h-4" />
+          🔍
+        </button>
+        <button
+          onClick={() => setShowPinned(!showPinned)}
+          className="p-2 hover:bg-gray-200 rounded-lg transition flex items-center gap-1 text-sm"
+          title="Show pinned messages"
+        >
+          📌
+        </button>
+        <button
+          onClick={() => setShowFavorites(!showFavorites)}
+          className="p-2 hover:bg-gray-200 rounded-lg transition flex items-center gap-1 text-sm"
+          title="Show favorites"
+        >
+          <Star className="w-4 h-4" />
+          ⭐
+        </button>
+      </div>
+
+      {/* Search Bar */}
+      {showSearch && (
+        <MessageSearchBar
+          channelId={channel?.id}
+          onSearch={(query) => {
+            toast.info(`Searching for: ${query}`);
+          }}
+          onClose={() => setShowSearch(false)}
+        />
+      )}
+
+      {/* Pinned Messages Bar */}
+      <PinnedMessagesBar
+        channelId={channel?.id}
+        isOpen={showPinned}
+        onClose={() => setShowPinned(false)}
+      />
+
+      {/* Main Chat Area */}
+      <div className="h-[93vh] flex-1">
+        <Chat client={chatClient}>
+          <Channel channel={channel}>
+            <div className="w-full relative h-full flex flex-col">
+              {/* Recipient Status */}
+              {recipientData && (
+                <div className="p-3 bg-blue-50 border-b">
+                  <UserStatusIndicator
+                    userId={targetUserId}
+                    userName={recipientData.fullName}
+                    profilePic={recipientData.profilePic}
+                  />
+                </div>
+              )}
+
+              <CallButton
+                recipientId={targetUserId}
+                recipientName={recipientData?.fullName || "User"}
+                recipientImage={recipientData?.profilePic}
+              />
+
+              <Window>
+                <ChannelHeader />
+                <MessageList />
+                {/* <MessageInput focus /> */}
+                <div className="p-4 bg-gray-50 border-t">
+                  <input
+                    type="text"
+                    placeholder="Type a message..."
+                    className="w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </Window>
+            </div>
+            <Thread />
+          </Channel>
+        </Chat>
+      </div>
+
+      {/* Favorites Modal */}
+      <FavoritesList isOpen={showFavorites} onClose={() => setShowFavorites(false)} />
     </div>
   );
 };

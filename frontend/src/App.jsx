@@ -9,6 +9,7 @@ import ChatPage from "./pages/ChatPage.jsx";
 import OnboardingPage from "./pages/OnboardingPage.jsx";
 
 import { Toaster } from "react-hot-toast";
+import BetterToastContainer from "./components/BetterToastContainer.jsx";
 
 import PageLoader from "./components/PageLoader.jsx";
 import useAuthUser from "./hooks/useAuthUser.js";
@@ -116,6 +117,7 @@ const App = () => {
       </Routes>
 
       <Toaster />
+      <BetterToastContainer />
     </div>
   );
 };

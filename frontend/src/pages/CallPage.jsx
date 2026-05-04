@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import useAuthUser from "../hooks/useAuthUser";
+import useDocumentTitle from "../hooks/useDocumentTitle";
 import { useQuery } from "@tanstack/react-query";
 import { getStreamToken } from "../lib/api";
 
@@ -23,6 +24,7 @@ const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
 const CallPage = () => {
   const { id: callId } = useParams();
+  useDocumentTitle("Video Call");
   const [client, setClient] = useState(null);
   const [call, setCall] = useState(null);
   const [isConnecting, setIsConnecting] = useState(true);

@@ -1,0 +1,16 @@
+{
+  "buildCommand": "cd frontend && npm install && npm run build",
+  "outputDirectory": "frontend/dist",
+  "installCommand": "cd frontend && npm install",
+  "framework": "vite",
+  "env": {
+    "VITE_API_URL": {
+      "description": "Backend API URL (e.g., https://linkup-backend.onrender.com/api)",
+      "example": "https://linkup-backend.onrender.com/api"
+    },
+    "VITE_STREAM_API_KEY": {
+      "description": "Stream.io API Key from https://getstream.io",
+      "example": "your_stream_api_key"
+    }
+  }
+}
