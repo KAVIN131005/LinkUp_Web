@@ -118,7 +118,6 @@ const Sidebar = ({ onNavigate = null }) => {
   );
 };
 export default Sidebar;
-        <Link to="/" className="flex items-center gap-3 group">
           <div className="p-3 bg-gradient-to-br from-primary to-secondary rounded-2xl group-hover:scale-110 transition-transform duration-300">
             <LinkIcon className="size-8 text-white" />
           </div>
