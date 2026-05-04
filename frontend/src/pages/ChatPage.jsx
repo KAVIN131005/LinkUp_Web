@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "react-router";
 import useAuthUser from "../hooks/useAuthUser";
 import useDocumentTitle from "../hooks/useDocumentTitle";
@@ -23,7 +23,7 @@ import MessageSearchBar from "../components/MessageSearchBar";
 import PinnedMessagesBar from "../components/PinnedMessagesBar";
 import FavoritesList from "../components/FavoritesList";
 import UserStatusIndicator from "../components/UserStatusIndicator";
-import { Star, Search } from "lucide-react";
+import { Star, Search, Send } from "lucide-react";
 
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
 
@@ -198,7 +198,38 @@ const ChatPage = () => {
               <Window>
                 <ChannelHeader />
                 <MessageList />
-                <MessageInput focus />
+                {/* CUSTOM MESSAGE INPUT WITH VISIBLE SEND BUTTON */}
+                <div className="p-4 bg-white border-t border-gray-200 flex gap-2">
+                  <input
+                    type="text"
+                    id="msg-input-custom"
+                    placeholder="Type a message..."
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter' && e.target.value.trim()) {
+                        channel.sendMessage({
+                          text: e.target.value.trim(),
+                        });
+                        e.target.value = '';
+                      }
+                    }}
+                  />
+                  <button
+                    onClick={() => {
+                      const input = document.getElementById("msg-input-custom");
+                      if (input && input.value.trim()) {
+                        channel.sendMessage({
+                          text: input.value.trim(),
+                        });
+                        input.value = '';
+                      }
+                    }}
+                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center gap-2 font-semibold transition"
+                  >
+                    <Send className="w-4 h-4" />
+                    Send
+                  </button>
+                </div>
               </Window>
             </div>
             <Thread />

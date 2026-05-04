@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff } from "lucide-react";
+import { Phone, PhoneOff, Mic, MicOff, Video, VideoOff, Minimize2 } from "lucide-react";
 import { endCall } from "../lib/api";
 import toast from "react-hot-toast";
 
@@ -11,57 +11,123 @@ export default function VideoCallWindow({
   const [isMuted, setIsMuted] = useState(false);
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [duration, setDuration] = useState(0);
+  const [localStream, setLocalStream] = useState(null);
+  const [error, setError] = useState(null);
   const durationIntervalRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const peerConnectionRef = useRef(null);
 
   useEffect(() => {
-    if (!isOpen) return;
+    if (!isOpen || !callData) {
+      console.log("VideoCallWindow not open or no callData");
+      return;
+    }
 
+    console.log("🎥 Starting video call setup...");
+    
     // Start duration timer
     durationIntervalRef.current = setInterval(() => {
       setDuration((prev) => prev + 1);
     }, 1000);
 
-    // Request access to camera
-    navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
-      .then((stream) => {
+    // Request access to camera and microphone
+    const startVideo = async () => {
+      try {
+        console.log("📹 Requesting camera and microphone access...");
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: { echoCancellation: true, noiseSuppression: true },
+        });
+
+        console.log("✅ Camera access granted");
+        setLocalStream(stream);
+
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
+          console.log("✅ Local video stream set");
         }
-      })
-      .catch((error) => {
-        console.error("Error accessing media devices:", error);
-        toast.error("Could not access camera/microphone");
-      });
+
+        // For demo: mirror the local stream to remote (in real app, use WebSocket/WebRTC)
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = stream;
+          console.log("✅ Remote video stream set (demo mode)");
+        }
+
+        setError(null);
+      } catch (err) {
+        console.error("❌ Error accessing camera:", err);
+        setError(err.message || "Could not access camera/microphone");
+        toast.error(`❌ Camera error: ${err.message}`);
+      }
+    };
+
+    startVideo();
 
     return () => {
       if (durationIntervalRef.current) {
         clearInterval(durationIntervalRef.current);
       }
+      if (localStream) {
+        localStream.getTracks().forEach((track) => {
+          console.log("Stopping track:", track.kind);
+          track.stop();
+        });
+      }
     };
-  }, [isOpen]);
+  }, [isOpen, callData]);
 
   const handleEndCall = async () => {
     try {
+      console.log("📞 Hanging up call...");
+      
+      // Stop all tracks
+      if (localStream) {
+        localStream.getTracks().forEach((track) => track.stop());
+      }
+
       await endCall(
         callData.recipient.id,
         "video",
         duration,
         "completed"
       );
-      toast.success("Call ended");
-      setTimeout(onClose, 1000);
+
+      toast.success("✅ Call ended");
+      setTimeout(onClose, 500);
     } catch (error) {
-      console.error("Error ending call:", error);
+      console.error("❌ Error ending call:", error);
       onClose();
     }
   };
 
+  const toggleAudio = () => {
+    if (localStream) {
+      localStream.getAudioTracks().forEach((track) => {
+        track.enabled = isMuted; // If muted is true, enable the track (unmute)
+        console.log(`🎤 Audio ${track.enabled ? 'unmuted' : 'muted'}`);
+      });
+      setIsMuted(!isMuted);
+    }
+  };
+
+  const toggleVideo = () => {
+    if (localStream) {
+      localStream.getVideoTracks().forEach((track) => {
+        track.enabled = !isVideoOn;
+        console.log(`📹 Video ${track.enabled ? 'on' : 'off'}`);
+      });
+      setIsVideoOn(!isVideoOn);
+    }
+  };
+
   const formatDuration = () => {
-    const mins = Math.floor(duration / 60);
+    const hrs = Math.floor(duration / 3600);
+    const mins = Math.floor((duration % 3600) / 60);
     const secs = duration % 60;
+    if (hrs > 0) {
+      return `${hrs}:${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+    }
     return `${mins}:${secs.toString().padStart(2, "0")}`;
   };
 
@@ -77,37 +143,47 @@ export default function VideoCallWindow({
           className="w-full h-full object-cover bg-gray-900"
           autoPlay
           playsInline
+          onLoadedMetadata={() => console.log("📺 Remote video loaded")}
         />
 
         {/* Local Video (Picture in Picture) */}
-        <div className="absolute bottom-20 right-6 w-32 h-40 rounded-lg overflow-hidden border-2 border-white shadow-lg">
+        <div className="absolute bottom-24 right-6 w-32 h-40 rounded-xl overflow-hidden border-4 border-white shadow-2xl bg-black">
           <video
             ref={localVideoRef}
             className="w-full h-full object-cover"
             autoPlay
             playsInline
             muted
+            onLoadedMetadata={() => console.log("📷 Local video loaded")}
           />
         </div>
 
         {/* Call Info */}
         <div className="absolute top-6 left-1/2 transform -translate-x-1/2 text-center">
-          <h3 className="text-white text-lg font-bold">
-            {callData.recipient.name}
+          <h3 className="text-white text-xl lg:text-2xl font-bold drop-shadow-lg">
+            {callData?.recipient?.name || "Unknown"}
           </h3>
-          <p className="text-gray-300 text-sm">🎥 Video Call • {formatDuration()}</p>
+          <p className="text-gray-200 text-sm lg:text-base drop-shadow-lg">🎥 Video Call • {formatDuration()}</p>
         </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="absolute top-20 left-1/2 transform -translate-x-1/2 bg-red-600 text-white px-4 py-2 rounded-lg">
+            {error}
+          </div>
+        )}
 
         {/* Control Buttons */}
         <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4">
           {/* Mute Audio */}
           <button
-            onClick={() => setIsMuted(!isMuted)}
-            className={`p-3 rounded-full transition ${
+            onClick={toggleAudio}
+            className={`p-4 rounded-full transition transform hover:scale-110 ${
               isMuted
                 ? "bg-red-600 hover:bg-red-700"
                 : "bg-gray-700 hover:bg-gray-600"
             }`}
+            title={isMuted ? "Unmute" : "Mute"}
           >
             {isMuted ? (
               <MicOff className="w-6 h-6 text-white" />
@@ -118,12 +194,13 @@ export default function VideoCallWindow({
 
           {/* Toggle Video */}
           <button
-            onClick={() => setIsVideoOn(!isVideoOn)}
-            className={`p-3 rounded-full transition ${
+            onClick={toggleVideo}
+            className={`p-4 rounded-full transition transform hover:scale-110 ${
               !isVideoOn
                 ? "bg-red-600 hover:bg-red-700"
                 : "bg-gray-700 hover:bg-gray-600"
             }`}
+            title={isVideoOn ? "Stop Video" : "Start Video"}
           >
             {isVideoOn ? (
               <Video className="w-6 h-6 text-white" />
@@ -135,7 +212,8 @@ export default function VideoCallWindow({
           {/* End Call */}
           <button
             onClick={handleEndCall}
-            className="p-3 rounded-full bg-red-600 hover:bg-red-700 transition"
+            className="p-4 rounded-full bg-red-600 hover:bg-red-700 transition transform hover:scale-110"
+            title="End Call"
           >
             <PhoneOff className="w-6 h-6 text-white" />
           </button>
