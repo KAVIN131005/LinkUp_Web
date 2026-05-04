@@ -3,8 +3,8 @@ services:
     name: linkup-backend
     runtime: node
     plan: free
-    buildCommand: "npm install"
-    startCommand: "node src/server.js"
+    buildCommand: "npm install && npm run build"
+    startCommand: "npm start"
     envVars:
       - key: NODE_ENV
         value: "production"
@@ -18,6 +18,9 @@ services:
         scope: shared
       - key: STREAM_API_SECRET
         description: "Stream.io API Secret"
+        scope: shared
+      - key: JWT_SECRET_KEY
+        description: "JWT Secret for authentication"
         scope: shared
       - key: JWT_SECRET_KEY
         description: "JWT Secret for authentication"
