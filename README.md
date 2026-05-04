@@ -100,7 +100,7 @@ LinkUp is a complete implementation of a WhatsApp Web clone that demonstrates co
 
 #### 1. Clone the Repository
 ```bash
-git clone https://github.com/yourusername/LinkUp.git
+git clone https://github.com/KAVIN131005/LinkUp_Web.git
 cd LinkUp
 ```
 
