@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router";
 import useAuthUser from "../hooks/useAuthUser";
 import useDocumentTitle from "../hooks/useDocumentTitle";
 import { useQuery } from "@tanstack/react-query";
-import { getStreamToken } from "../lib/api";
+import { getVideoToken } from "../lib/api";
 
 import {
   StreamVideo,
@@ -32,14 +32,14 @@ const CallPage = () => {
   const { authUser, isLoading } = useAuthUser();
 
   const { data: tokenData } = useQuery({
-    queryKey: ["streamToken"],
-    queryFn: getStreamToken,
+    queryKey: ["videoToken"],
+    queryFn: getVideoToken,
     enabled: !!authUser,
   });
 
   useEffect(() => {
     const initCall = async () => {
-      if (!tokenData.token || !authUser || !callId) return;
+      if (!tokenData?.token || !authUser || !callId) return;
 
       try {
         console.log("Initializing Stream video client...");
@@ -58,6 +58,7 @@ const CallPage = () => {
 
         const callInstance = videoClient.call("default", callId);
 
+        // Try to join the call, create if it doesn't exist
         await callInstance.join({ create: true });
 
         console.log("Joined call successfully");
@@ -73,7 +74,7 @@ const CallPage = () => {
     };
 
     initCall();
-  }, [tokenData, authUser, callId]);
+  }, [tokenData?.token, authUser, callId]);
 
   if (isLoading || isConnecting) return <PageLoader />;
 

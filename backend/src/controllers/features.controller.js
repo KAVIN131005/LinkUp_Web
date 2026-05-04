@@ -1,5 +1,6 @@
 import User from "../models/User.js";
 import PinnedMessage from "../models/PinnedMessage.js";
+import { generateVideoToken, createVideoCall, getCallDetails } from "../lib/stream.js";
 
 // 🟢 USER ONLINE STATUS MANAGEMENT
 export async function updateUserStatus(req, res) {
@@ -252,9 +253,26 @@ export async function initiateCall(req, res) {
     // Generate unique call ID
     const callId = `call_${req.user._id}_${recipientId}_${Date.now()}`;
 
+    // For video calls, create a Stream Video call
+    let videoCall = null;
+    let videoToken = null;
+
+    if (callType === "video") {
+      try {
+        videoCall = await createVideoCall(callId, req.user._id);
+        videoToken = generateVideoToken(req.user._id);
+        console.log("Video call created:", callId);
+      } catch (error) {
+        console.error("Error creating video call:", error);
+        return res.status(500).json({ message: "Failed to create video call" });
+      }
+    }
+
     res.status(200).json({
       success: true,
       callId,
+      callType,
+      videoToken: videoToken,
       caller: {
         id: req.user._id,
         name: req.user.fullName,
@@ -265,9 +283,9 @@ export async function initiateCall(req, res) {
         name: recipient.fullName,
         profilePic: recipient.profilePic,
       },
-      callType,
     });
   } catch (error) {
+    console.error("Error initiating call:", error);
     res.status(500).json({ message: "Error initiating call" });
   }
 }
@@ -305,6 +323,32 @@ export async function endCall(req, res) {
     });
   } catch (error) {
     res.status(500).json({ message: "Error ending call" });
+  }
+}
+
+// GET VIDEO TOKEN
+export async function getVideoToken(req, res) {
+  try {
+    console.log("getVideoToken called for user:", req.user.id);
+    const token = generateVideoToken(req.user.id);
+    console.log("Generated video token:", token);
+
+    res.status(200).json({ token });
+  } catch (error) {
+    console.log("Error in getVideoToken controller:", error.message);
+    res.status(500).json({ message: "Internal Server Error" });
+  }
+}
+
+// CHECK FOR INCOMING CALLS (polling mechanism)
+export async function checkIncomingCalls(req, res) {
+  try {
+    // In a real app, this would check a database or cache for pending calls
+    // For now, return empty array
+    res.status(200).json({ incomingCalls: [] });
+  } catch (error) {
+    console.error("Error checking incoming calls:", error);
+    res.status(500).json({ message: "Error checking calls" });
   }
 }
 

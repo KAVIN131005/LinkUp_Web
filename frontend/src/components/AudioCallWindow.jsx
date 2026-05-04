@@ -11,8 +11,21 @@ export default function AudioCallWindow({
   const [isMuted, setIsMuted] = useState(false);
   const [duration, setDuration] = useState(0);
   const [localStream, setLocalStream] = useState(null);
+  const [remoteStream, setRemoteStream] = useState(null);
   const [error, setError] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
   const durationIntervalRef = useRef(null);
+  const peerConnectionRef = useRef(null);
+  const localAudioRef = useRef(null);
+  const remoteAudioRef = useRef(null);
+
+  // WebRTC configuration
+  const rtcConfiguration = {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+    ]
+  };
 
   useEffect(() => {
     if (!isOpen || !callData) {
@@ -27,64 +40,110 @@ export default function AudioCallWindow({
       setDuration((prev) => prev + 1);
     }, 1000);
 
-    // Request access to microphone
-    const startAudio = async () => {
-      try {
-        console.log("🎤 Requesting microphone access...");
-        const stream = await navigator.mediaDevices.getUserMedia({
-          audio: {
-            echoCancellation: true,
-            noiseSuppression: true,
-            autoGainControl: true,
-          },
-        });
-
-        console.log("✅ Microphone access granted");
-        setLocalStream(stream);
-        setError(null);
-
-        // Log stream status
-        stream.getAudioTracks().forEach((track) => {
-          console.log("🎵 Audio track started:", {
-            kind: track.kind,
-            enabled: track.enabled,
-            state: track.readyState,
-          });
-        });
-      } catch (err) {
-        console.error("❌ Error accessing microphone:", err);
-        setError(err.message || "Could not access microphone");
-        toast.error(`❌ Microphone error: ${err.message}`);
-      }
-    };
-
-    startAudio();
+    // Initialize WebRTC
+    initializeCall();
 
     return () => {
       if (durationIntervalRef.current) {
         clearInterval(durationIntervalRef.current);
       }
-      if (localStream) {
-        localStream.getTracks().forEach((track) => {
-          console.log("🛑 Stopping audio track");
-          track.stop();
-        });
-      }
+      cleanup();
     };
   }, [isOpen, callData]);
+
+  const initializeCall = async () => {
+    try {
+      console.log("🎤 Requesting microphone access...");
+
+      // Get local media
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+          autoGainControl: true,
+        },
+      });
+
+      console.log("✅ Microphone access granted");
+      setLocalStream(stream);
+
+      // Set up local audio
+      if (localAudioRef.current) {
+        localAudioRef.current.srcObject = stream;
+      }
+
+      // Create peer connection
+      peerConnectionRef.current = new RTCPeerConnection(rtcConfiguration);
+
+      // Add local stream to peer connection
+      stream.getTracks().forEach(track => {
+        peerConnectionRef.current.addTrack(track, stream);
+      });
+
+      // Handle remote stream
+      peerConnectionRef.current.ontrack = (event) => {
+        console.log("📡 Received remote stream");
+        setRemoteStream(event.streams[0]);
+        if (remoteAudioRef.current) {
+          remoteAudioRef.current.srcObject = event.streams[0];
+        }
+        setIsConnected(true);
+      };
+
+      // Handle ICE candidates
+      peerConnectionRef.current.onicecandidate = (event) => {
+        if (event.candidate) {
+          console.log("ICE candidate:", event.candidate);
+          // In a real app, send this to the other peer via signaling server
+        }
+      };
+
+      // For demo purposes, create offer and immediately accept it
+      // In real app, this would be exchanged via WebSocket/Socket.io
+      const offer = await peerConnectionRef.current.createOffer();
+      await peerConnectionRef.current.setLocalDescription(offer);
+
+      // Simulate receiving answer (in real app, this comes from other peer)
+      setTimeout(async () => {
+        try {
+          await peerConnectionRef.current.setRemoteDescription(offer);
+          setIsConnected(true);
+          console.log("✅ Call connected (demo mode)");
+        } catch (error) {
+          console.error("Error setting remote description:", error);
+        }
+      }, 1000);
+
+    } catch (err) {
+      console.error("❌ Error accessing microphone:", err);
+      setError(err.message || "Could not access microphone");
+      toast.error(`❌ Microphone error: ${err.message}`);
+    }
+  };
+
+  const cleanup = () => {
+    if (localStream) {
+      localStream.getTracks().forEach((track) => {
+        console.log("🛑 Stopping local track");
+        track.stop();
+      });
+    }
+    if (remoteStream) {
+      remoteStream.getTracks().forEach((track) => {
+        console.log("🛑 Stopping remote track");
+        track.stop();
+      });
+    }
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+    }
+  };
 
   const handleEndCall = async () => {
     try {
       console.log("📞 Ending audio call...");
 
-      // Stop all tracks
-      if (localStream) {
-        localStream.getTracks().forEach((track) => {
-          console.log("Stopping track:", track.kind);
-          track.stop();
-        });
-      }
-
+      cleanup();
       await endCall(
         callData.recipient.id,
         "audio",
@@ -145,7 +204,7 @@ export default function AudioCallWindow({
                 e.target.src = "https://via.placeholder.com/120";
               }}
             />
-            {!error && (
+            {isConnected && (
               <div className="absolute bottom-2 right-2 w-5 h-5 bg-green-400 rounded-full border-2 border-white animate-pulse" />
             )}
           </div>
@@ -162,7 +221,9 @@ export default function AudioCallWindow({
         </p>
 
         {/* Status */}
-        <p className="text-blue-200 mb-8 text-base lg:text-lg drop-shadow-lg">📞 Audio Call Active</p>
+        <p className="text-blue-200 mb-8 text-base lg:text-lg drop-shadow-lg">
+          {isConnected ? "📞 Audio Call Connected" : "📞 Connecting..."}
+        </p>
 
         {/* Error Message */}
         {error && (
@@ -207,12 +268,16 @@ export default function AudioCallWindow({
           </p>
         )}
 
-        {/* Stream Status */}
-        {localStream && !error && (
+        {/* Connection Status */}
+        {isConnected && (
           <p className="text-green-300 text-xs lg:text-sm mt-4 drop-shadow-lg">
             ✅ Connected
           </p>
         )}
+
+        {/* Hidden audio elements */}
+        <audio ref={localAudioRef} muted autoPlay />
+        <audio ref={remoteAudioRef} autoPlay />
       </div>
     </div>
   );

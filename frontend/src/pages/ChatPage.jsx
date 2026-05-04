@@ -23,6 +23,7 @@ import MessageSearchBar from "../components/MessageSearchBar";
 import PinnedMessagesBar from "../components/PinnedMessagesBar";
 import FavoritesList from "../components/FavoritesList";
 import UserStatusIndicator from "../components/UserStatusIndicator";
+import CustomMessage from "../components/CustomMessage";
 import { Star, Search, Send } from "lucide-react";
 
 const STREAM_API_KEY = import.meta.env.VITE_STREAM_API_KEY;
@@ -127,32 +128,70 @@ const ChatPage = () => {
   if (loading || !chatClient || !channel) return <ChatLoader />;
 
   return (
-    <div className="h-[93vh] flex flex-col">
-      {/* Feature Controls Bar */}
-      <div className="bg-gray-50 border-b px-4 py-2 flex items-center gap-2">
-        <button
-          onClick={() => setShowSearch(!showSearch)}
-          className="p-2 hover:bg-gray-200 rounded-lg transition flex items-center gap-1 text-sm"
-          title="Search messages"
-        >
-          <Search className="w-4 h-4" />
-          🔍
-        </button>
-        <button
-          onClick={() => setShowPinned(!showPinned)}
-          className="p-2 hover:bg-gray-200 rounded-lg transition flex items-center gap-1 text-sm"
-          title="Show pinned messages"
-        >
-          📌
-        </button>
-        <button
-          onClick={() => setShowFavorites(!showFavorites)}
-          className="p-2 hover:bg-gray-200 rounded-lg transition flex items-center gap-1 text-sm"
-          title="Show favorites"
-        >
-          <Star className="w-4 h-4" />
-          ⭐
-        </button>
+    <div className="h-screen flex flex-col bg-white overflow-hidden">
+      {/* TOP HEADER - User Info & Call Button */}
+      <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 sm:px-6 py-3 sm:py-4 border-b border-blue-700 shadow-md">
+        <div className="flex items-center justify-between">
+          {/* Left: Avatar & User Info */}
+          <div className="flex items-center gap-3 sm:gap-4 flex-1 min-w-0">
+            {recipientData?.profilePic ? (
+              <img
+                src={recipientData.profilePic}
+                alt={recipientData.fullName}
+                className="w-10 sm:w-12 h-10 sm:h-12 rounded-full object-cover border-2 border-white shadow-lg flex-shrink-0"
+                onError={(e) => {
+                  e.target.src = "https://ui-avatars.com/api/?name=" + encodeURIComponent(recipientData.fullName || "User");
+                }}
+              />
+            ) : (
+              <div className="w-10 sm:w-12 h-10 sm:h-12 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 border-2 border-white">
+                <span className="text-lg sm:text-xl font-bold">
+                  {recipientData?.fullName?.charAt(0)?.toUpperCase() || "U"}
+                </span>
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <h2 className="text-base sm:text-lg font-bold truncate">
+                {recipientData?.fullName || "Loading..."}
+              </h2>
+              <p className={`text-xs sm:text-sm ${recipientData?.onlineStatus === "online" ? "text-green-200" : "text-gray-200"}`}>
+                {recipientData?.onlineStatus === "online" ? "🟢 Online" : "🔴 Offline"}
+              </p>
+            </div>
+          </div>
+
+          {/* Right: Features & Call Button */}
+          <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+            <button
+              onClick={() => setShowSearch(!showSearch)}
+              className="p-2 hover:bg-blue-700 rounded-lg transition"
+              title="Search"
+            >
+              <Search className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+            <button
+              onClick={() => setShowPinned(!showPinned)}
+              className="p-2 hover:bg-blue-700 rounded-lg transition"
+              title="Pinned"
+            >
+              📌
+            </button>
+            <button
+              onClick={() => setShowFavorites(!showFavorites)}
+              className="p-2 hover:bg-blue-700 rounded-lg transition"
+              title="Favorites"
+            >
+              <Star className="w-5 h-5 sm:w-6 sm:h-6" />
+            </button>
+            <div className="h-6 w-px bg-blue-400 mx-1"></div>
+            {/* Call Button via Portal */}
+            <CallButton
+              recipientId={targetUserId}
+              recipientName={recipientData?.fullName || "User"}
+              recipientImage={recipientData?.profilePic}
+            />
+          </div>
+        </div>
       </div>
 
       {/* Search Bar */}
@@ -173,44 +212,30 @@ const ChatPage = () => {
         onClose={() => setShowPinned(false)}
       />
 
-      {/* Main Chat Area */}
-      <div className="h-[93vh] flex-1">
+      {/* MAIN CHAT AREA */}
+      <div className="flex-1 overflow-hidden flex flex-col">
         <Chat client={chatClient}>
           <Channel channel={channel}>
-            <div className="w-full relative h-full flex flex-col">
-              {/* Recipient Status */}
-              {recipientData && (
-                <div className="p-3 bg-blue-50 border-b">
-                  <UserStatusIndicator
-                    userId={targetUserId}
-                    userName={recipientData.fullName}
-                    profilePic={recipientData.profilePic}
-                  />
-                </div>
-              )}
+            <div className="w-full h-full flex flex-col bg-gray-50">
+              {/* Messages Area */}
+              <div className="flex-1 overflow-auto">
+                <MessageList Message={CustomMessage} />
+              </div>
 
-              <CallButton
-                recipientId={targetUserId}
-                recipientName={recipientData?.fullName || "User"}
-                recipientImage={recipientData?.profilePic}
-              />
-
-              <Window>
-                <ChannelHeader />
-                <MessageList />
-                {/* CUSTOM MESSAGE INPUT WITH VISIBLE SEND BUTTON */}
-                <div className="p-4 bg-white border-t border-gray-200 flex gap-2">
+              {/* Message Input Bar */}
+              <div className="bg-white border-t border-gray-200 p-3 sm:p-4 shadow-lg">
+                <div className="flex gap-2 sm:gap-3">
                   <input
                     type="text"
                     id="msg-input-custom"
                     placeholder="Type a message..."
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 sm:px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base"
                     onKeyPress={(e) => {
-                      if (e.key === 'Enter' && e.target.value.trim()) {
+                      if (e.key === "Enter" && e.target.value.trim()) {
                         channel.sendMessage({
                           text: e.target.value.trim(),
                         });
-                        e.target.value = '';
+                        e.target.value = "";
                       }
                     }}
                   />
@@ -221,16 +246,16 @@ const ChatPage = () => {
                         channel.sendMessage({
                           text: input.value.trim(),
                         });
-                        input.value = '';
+                        input.value = "";
                       }
                     }}
-                    className="px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center gap-2 font-semibold transition"
+                    className="px-3 sm:px-4 py-2 sm:py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg flex items-center gap-2 font-semibold transition flex-shrink-0"
                   >
-                    <Send className="w-4 h-4" />
-                    Send
+                    <Send className="w-4 h-4 sm:w-5 sm:h-5" />
+                    <span className="hidden sm:inline text-sm">Send</span>
                   </button>
                 </div>
-              </Window>
+              </div>
             </div>
             <Thread />
           </Channel>

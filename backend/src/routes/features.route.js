@@ -15,6 +15,8 @@ import {
   initiateCall,
   endCall,
   getCallHistory,
+  getVideoToken,
+  checkIncomingCalls,
 } from "../controllers/features.controller.js";
 
 const router = express.Router();
@@ -46,5 +48,7 @@ router.get("/favorites", protectRoute, getFavorites);
 router.post("/calls/initiate", protectRoute, initiateCall);
 router.post("/calls/end", protectRoute, endCall);
 router.get("/calls/history", protectRoute, getCallHistory);
+router.get("/calls/incoming", protectRoute, checkIncomingCalls);
+router.get("/video-token", protectRoute, getVideoToken);
 
 export default router;

@@ -12,11 +12,14 @@ export default function VideoCallWindow({
   const [isVideoOn, setIsVideoOn] = useState(true);
   const [duration, setDuration] = useState(0);
   const [localStream, setLocalStream] = useState(null);
+  const [remoteStream, setRemoteStream] = useState(null);
   const [error, setError] = useState(null);
+  const [isConnected, setIsConnected] = useState(false);
   const durationIntervalRef = useRef(null);
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const peerConnectionRef = useRef(null);
+  const websocketRef = useRef(null);
 
   useEffect(() => {
     if (!isOpen || !callData) {
@@ -25,66 +28,117 @@ export default function VideoCallWindow({
     }
 
     console.log("🎥 Starting video call setup...");
-    
+
     // Start duration timer
     durationIntervalRef.current = setInterval(() => {
       setDuration((prev) => prev + 1);
     }, 1000);
 
-    // Request access to camera and microphone
-    const startVideo = async () => {
-      try {
-        console.log("📹 Requesting camera and microphone access...");
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: { width: { ideal: 1280 }, height: { ideal: 720 } },
-          audio: { echoCancellation: true, noiseSuppression: true },
-        });
-
-        console.log("✅ Camera access granted");
-        setLocalStream(stream);
-
-        if (localVideoRef.current) {
-          localVideoRef.current.srcObject = stream;
-          console.log("✅ Local video stream set");
-        }
-
-        // For demo: mirror the local stream to remote (in real app, use WebSocket/WebRTC)
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = stream;
-          console.log("✅ Remote video stream set (demo mode)");
-        }
-
-        setError(null);
-      } catch (err) {
-        console.error("❌ Error accessing camera:", err);
-        setError(err.message || "Could not access camera/microphone");
-        toast.error(`❌ Camera error: ${err.message}`);
-      }
-    };
-
-    startVideo();
+    // Initialize WebRTC call
+    initializeCall();
 
     return () => {
-      if (durationIntervalRef.current) {
-        clearInterval(durationIntervalRef.current);
-      }
-      if (localStream) {
-        localStream.getTracks().forEach((track) => {
-          console.log("Stopping track:", track.kind);
-          track.stop();
-        });
-      }
+      cleanup();
     };
   }, [isOpen, callData]);
+
+  const initializeCall = async () => {
+    try {
+      console.log("🎥 Initializing WebRTC video call...");
+
+      // Get user media
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: { echoCancellation: true, noiseSuppression: true },
+      });
+
+      console.log("✅ Camera and microphone access granted");
+      setLocalStream(stream);
+
+      if (localVideoRef.current) {
+        localVideoRef.current.srcObject = stream;
+        console.log("✅ Local video stream set");
+      }
+
+      // Initialize WebRTC peer connection
+      const pc = new RTCPeerConnection({
+        iceServers: [
+          { urls: 'stun:stun.l.google.com:19302' },
+          { urls: 'stun:stun1.l.google.com:19302' }
+        ]
+      });
+
+      peerConnectionRef.current = pc;
+
+      // Add local stream tracks to peer connection
+      stream.getTracks().forEach(track => {
+        pc.addTrack(track, stream);
+      });
+
+      // Handle remote stream
+      pc.ontrack = (event) => {
+        console.log("📺 Received remote stream");
+        setRemoteStream(event.streams[0]);
+        if (remoteVideoRef.current) {
+          remoteVideoRef.current.srcObject = event.streams[0];
+        }
+        setIsConnected(true);
+      };
+
+      // Handle ICE candidates
+      pc.onicecandidate = (event) => {
+        if (event.candidate) {
+          // In a real app, send candidate to signaling server
+          console.log("ICE candidate:", event.candidate);
+        }
+      };
+
+      // For demo purposes, create offer and immediately set as answer
+      // In real app, this would be exchanged via signaling server
+      const offer = await pc.createOffer();
+      await pc.setLocalDescription(offer);
+
+      // Simulate remote answer (in real app, this comes from other peer)
+      setTimeout(async () => {
+        try {
+          await pc.setRemoteDescription(offer);
+          console.log("✅ Call connected (demo mode)");
+        } catch (error) {
+          console.log("Demo connection setup");
+        }
+      }, 1000);
+
+      setError(null);
+    } catch (err) {
+      console.error("❌ Error initializing video call:", err);
+      setError(err.message || "Could not access camera/microphone");
+      toast.error(`❌ Video call error: ${err.message}`);
+    }
+  };
+
+  const cleanup = () => {
+    if (durationIntervalRef.current) {
+      clearInterval(durationIntervalRef.current);
+    }
+    if (localStream) {
+      localStream.getTracks().forEach((track) => {
+        console.log("Stopping track:", track.kind);
+        track.stop();
+      });
+    }
+    if (peerConnectionRef.current) {
+      peerConnectionRef.current.close();
+    }
+    if (websocketRef.current) {
+      websocketRef.current.close();
+    }
+  };
 
   const handleEndCall = async () => {
     try {
       console.log("📞 Hanging up call...");
-      
-      // Stop all tracks
-      if (localStream) {
-        localStream.getTracks().forEach((track) => track.stop());
-      }
+
+      cleanup();
 
       await endCall(
         callData.recipient.id,
@@ -104,7 +158,7 @@ export default function VideoCallWindow({
   const toggleAudio = () => {
     if (localStream) {
       localStream.getAudioTracks().forEach((track) => {
-        track.enabled = isMuted; // If muted is true, enable the track (unmute)
+        track.enabled = isMuted;
         console.log(`🎤 Audio ${track.enabled ? 'unmuted' : 'muted'}`);
       });
       setIsMuted(!isMuted);
@@ -163,7 +217,10 @@ export default function VideoCallWindow({
           <h3 className="text-white text-xl lg:text-2xl font-bold drop-shadow-lg">
             {callData?.recipient?.name || "Unknown"}
           </h3>
-          <p className="text-gray-200 text-sm lg:text-base drop-shadow-lg">🎥 Video Call • {formatDuration()}</p>
+          <p className="text-gray-200 text-sm lg:text-base drop-shadow-lg">
+            🎥 Video Call • {formatDuration()}
+            {isConnected && " • Connected"}
+          </p>
         </div>
 
         {/* Error Message */}

@@ -176,7 +176,19 @@ export async function endCall(recipientId, callType, duration, status) {
   return response.data;
 }
 
-export async function getCallHistory() {
-  const response = await axiosInstance.get("/features/calls/history");
+export async function getVideoToken() {
+  console.log("Making API call to get video token...");
+  try {
+    const response = await axiosInstance.get("/features/video-token");
+    console.log("Video token API response:", response.data);
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching video token:", error);
+    throw error;
+  }
+}
+
+export async function checkIncomingCalls() {
+  const response = await axiosInstance.get("/features/calls/incoming");
   return response.data;
 }
